@@ -1,12 +1,12 @@
 from os import environ
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from marshmallow_mongoengine import ModelSchema, fields
 from marshmallow.exceptions import ValidationError
 import mongoengine as me
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
-app.config["APPLICATION_ROOT"] = environ.get('API_ROOT', '/')
+routing_blueprint = Blueprint('routing', __name__, template_folder='templates')
 
 if 'MONGODB_DATABASE' not in environ:
     print("MONGODB_DATABASE not set, exiting...")
@@ -98,7 +98,7 @@ auth_schema = AuthSchema()
 measurement_schema = MeasurementSchema()
 
 
-@app.route('/auth', methods=['POST'])
+@routing_blueprint.route('/auth', methods=['POST'])
 def auth():
     auth_schema.validate(request.json)
     source = source_schema.load(request.json).data
@@ -123,7 +123,7 @@ def auth():
                 201)
 
 
-@app.route('/measurements', methods=['POST'])
+@routing_blueprint.route('/measurements', methods=['POST'])
 def post_measurement():
     measurement = measurement_schema.load(request.json).data
     measurement.save()
@@ -131,6 +131,8 @@ def post_measurement():
     return (jsonify(status=201),
             201)
 
+
+app.register_blueprint(routing_blueprint, url_prefix=environ.get('API_ROOT', ''))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=False)
