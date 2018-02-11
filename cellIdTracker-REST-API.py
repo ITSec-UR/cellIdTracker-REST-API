@@ -6,7 +6,7 @@ import mongoengine as me
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
-app.config["APPLICATION_ROOT"] = '/api/cellIdTracker'
+app.config["APPLICATION_ROOT"] = environ.get('API_ROOT', '/')
 
 if 'MONGO_DATABASE' not in environ:
     print("MONGO_DATABASE not set, exiting...")
