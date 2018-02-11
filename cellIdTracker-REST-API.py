@@ -17,11 +17,13 @@ if 'MONGODB_USER' in environ and 'MONGODB_PASSWORD' in environ:
                host=environ.get('MONGODB_HOST', 'localhost'),
                port=int(environ.get('MONGODB_PORT', '27017')),
                username=environ.get('MONGODB_USER'),
-               password=environ.get('MONGODB_PASSWORD'))
+               password=environ.get('MONGODB_PASSWORD'),
+               connect=False)
 else:
     me.connect(environ.get('MONGODB_DATABASE'),
                host=environ.get('MONGODB_HOST', 'localhost'),
-               port=int(environ.get('MONGODB_PORT', '27017')))
+               port=int(environ.get('MONGODB_PORT', '27017')),
+               connect=False)
 
 
 class Source(me.Document):
