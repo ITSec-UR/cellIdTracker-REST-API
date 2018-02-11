@@ -1,0 +1,5 @@
+mongoengine==0.15.0
+marshmallow==2.15.0
+Flask==0.12.2
+marshmallow-mongoengine==0.9.1
+gunicorn==19.7.1
