@@ -8,20 +8,20 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.config["APPLICATION_ROOT"] = environ.get('API_ROOT', '/')
 
-if 'MONGO_DATABASE' not in environ:
-    print("MONGO_DATABASE not set, exiting...")
+if 'MONGODB_DATABASE' not in environ:
+    print("MONGODB_DATABASE not set, exiting...")
     exit(1)
 
-if 'MONGO_USER' in environ and 'MONGO_PASSWORD' in environ:
-    me.connect(environ.get('MONGO_DATABASE'),
-               host=environ.get('MONGO_HOST', 'localhost'),
-               port=int(environ.get('MONGO_PORT', '27017')),
-               username=environ.get('MONGO_USER'),
-               password=environ.get('MONGO_PASSWORD'))
+if 'MONGODB_USER' in environ and 'MONGODB_PASSWORD' in environ:
+    me.connect(environ.get('MONGODB_DATABASE'),
+               host=environ.get('MONGODB_HOST', 'localhost'),
+               port=int(environ.get('MONGODB_PORT', '27017')),
+               username=environ.get('MONGODB_USER'),
+               password=environ.get('MONGODB_PASSWORD'))
 else:
-    me.connect(environ.get('MONGO_DATABASE'),
-               host=environ.get('MONGO_HOST', 'localhost'),
-               port=int(environ.get('MONGO_PORT', '27017')))
+    me.connect(environ.get('MONGODB_DATABASE'),
+               host=environ.get('MONGODB_HOST', 'localhost'),
+               port=int(environ.get('MONGODB_PORT', '27017')))
 
 
 class Source(me.Document):
