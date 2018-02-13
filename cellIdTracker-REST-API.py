@@ -57,6 +57,7 @@ class Measurement(me.Document):
     timestamp = me.DateTimeField(required=True)
     gps_latitude = me.FloatField(required=True)
     gps_longitude = me.FloatField(required=True)
+    gps_accuracy = me.FloatField(required=True)
     battery = me.FloatField(required=True)
     cell_info = me.EmbeddedDocumentListField(CellInfo, required=True)
 
