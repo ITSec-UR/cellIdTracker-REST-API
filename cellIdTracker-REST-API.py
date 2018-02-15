@@ -64,7 +64,7 @@ class Measurement(me.Document):
     timestamp = me.DateTimeField(required=True)
     location_information = me.EmbeddedDocumentField(LocationInformation)
     battery = me.FloatField(required=True)
-    cell_info = me.EmbeddedDocumentListField(CellInfo, required=True)
+    cell_info = me.EmbeddedDocumentListField(CellInfo)
 
 
 class SourceSchema(ModelSchema):
