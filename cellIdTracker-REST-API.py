@@ -1,3 +1,4 @@
+
 from os import environ
 from flask import Flask, request, jsonify, Blueprint
 from marshmallow_mongoengine import ModelSchema, fields
@@ -51,13 +52,17 @@ class CellInfo(me.EmbeddedDocument):
     signal_strength = me.DictField(required=True)
 
 
+class LocationInformation(me.EmbeddedDocument):
+    latitude = me.FloatField(required=True)
+    longitude = me.FloatField(required=True)
+    accuracy = me.FloatField(required=True)
+
+
 class Measurement(me.Document):
     meta = {'collection': 'measurements'}
     source_id = me.ObjectIdField(required=True)
     timestamp = me.DateTimeField(required=True)
-    gps_latitude = me.FloatField(required=True)
-    gps_longitude = me.FloatField(required=True)
-    gps_accuracy = me.FloatField(required=True)
+    location_information = me.EmbeddedDocumentField(LocationInformation)
     battery = me.FloatField(required=True)
     cell_info = me.EmbeddedDocumentListField(CellInfo, required=True)
 
