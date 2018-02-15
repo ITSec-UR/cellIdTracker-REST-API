@@ -43,13 +43,12 @@ class SignalStrength(me.DynamicEmbeddedDocument):
 
 class CellInfo(me.EmbeddedDocument):
     active = me.BooleanField(required=True)
-    type = me.StringField(required=True)  # choices=['LTE', 'UMTS', 'GSM']
-    frequency = me.StringField(required=True)
+    type = me.StringField(required=True, choices=['LTE', 'UMTS', 'CDMA', 'GSM'])
     # TODO: find a way to get this into an EmbeddedDocument again
     # cell_identity = me.EmbeddedDocumentField(CellIdentity, required=True)
     # signal_strength = me.EmbeddedDocumentField(SignalStrength,required=True)
     cell_identity = me.DictField(required=True)
-    signal_strength = me.DictField(required=True)
+    cell_signal_strength = me.DictField(required=True)
 
 
 class LocationInformation(me.EmbeddedDocument):
