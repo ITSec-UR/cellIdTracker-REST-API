@@ -48,7 +48,7 @@ class CellInfo(me.EmbeddedDocument):
     # cell_identity = me.EmbeddedDocumentField(CellIdentity, required=True)
     # signal_strength = me.EmbeddedDocumentField(SignalStrength,required=True)
     cell_identity = me.DictField(required=True)
-    cell_signal_strength = me.DictField(required=True)
+    signal_strength = me.DictField(required=True)
 
 
 class LocationInformation(me.EmbeddedDocument):
@@ -69,7 +69,6 @@ class Measurement(me.Document):
 class SourceSchema(ModelSchema):
     class Meta:
         model = Source
-        strict = True
 
 
 class AuthSchema(SourceSchema):
@@ -97,7 +96,6 @@ def handle_validation_error(error):
 class MeasurementSchema(ModelSchema):
     class Meta:
         model = Measurement
-        strict = True
 
 
 source_schema = SourceSchema()
@@ -108,7 +106,7 @@ measurement_schema = MeasurementSchema()
 @routing_blueprint.route('/auth', methods=['POST'])
 def auth():
     auth_schema.validate(request.json)
-    source = source_schema.load(request.json).data
+    source = source_schema.load(request.json)
 
     if request.json['psk'] != environ.get('AUTH_PSK', 'defaultpsk'):
         return (jsonify(status=403,
@@ -132,7 +130,7 @@ def auth():
 
 @routing_blueprint.route('/measurements', methods=['POST'])
 def post_measurement():
-    measurement = measurement_schema.load(request.json).data
+    measurement = measurement_schema.load(request.json)
     measurement.save()
 
     return (jsonify(status=201),
