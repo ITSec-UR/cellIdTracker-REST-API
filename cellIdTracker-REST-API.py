@@ -1,9 +1,9 @@
-
 from os import environ
 from flask import Flask, request, jsonify, Blueprint
 from marshmallow_mongoengine import ModelSchema, fields
-from marshmallow.exceptions import ValidationError
+from marshmallow import validates_schema, ValidationError
 import mongoengine as me
+
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -44,11 +44,8 @@ class SignalStrength(me.DynamicEmbeddedDocument):
 class CellInfo(me.EmbeddedDocument):
     active = me.BooleanField(required=True)
     type = me.StringField(required=True, choices=['LTE', 'UMTS', 'CDMA', 'GSM'])
-    # TODO: find a way to get this into an EmbeddedDocument again
-    # cell_identity = me.EmbeddedDocumentField(CellIdentity, required=True)
-    # signal_strength = me.EmbeddedDocumentField(SignalStrength,required=True)
     cell_identity = me.DictField(required=True)
-    signal_strength = me.DictField(required=True)
+    cell_signal_strength = me.DictField(required=True)
 
 
 class LocationInformation(me.EmbeddedDocument):
@@ -66,7 +63,15 @@ class Measurement(me.Document):
     cell_info = me.EmbeddedDocumentListField(CellInfo)
 
 
-class SourceSchema(ModelSchema):
+class ValidationModelSchema(ModelSchema):
+    @validates_schema(pass_original=True)
+    def check_unknown_fields(self, data, original_data):
+        unexpected = set(original_data) - set(self.fields)
+        if unexpected:
+            raise ValidationError('Received data for unexpected field.', unexpected)
+
+
+class SourceSchema(ValidationModelSchema):
     class Meta:
         model = Source
 
@@ -80,20 +85,7 @@ class AuthSchema(SourceSchema):
         raise error
 
 
-@app.errorhandler(ValidationError)
-def handle_validation_error(error):
-    try:
-        status_code = error.status_code
-    except AttributeError:
-        status_code = 400
-
-    return (jsonify(status=status_code,
-                    message=error.messages),
-            status_code)
-    pass
-
-
-class MeasurementSchema(ModelSchema):
+class MeasurementSchema(ValidationModelSchema):
     class Meta:
         model = Measurement
 
@@ -101,6 +93,22 @@ class MeasurementSchema(ModelSchema):
 source_schema = SourceSchema()
 auth_schema = AuthSchema()
 measurement_schema = MeasurementSchema()
+
+
+@app.errorhandler(me.ValidationError)
+@app.errorhandler(ValidationError)
+def handle_validation_error(error):
+    try:
+        status_code = error.status_code
+    except AttributeError:
+        status_code = 400
+
+    error_message = error.message if isinstance(error, me.ValidationError) else error.messages
+
+    return (jsonify(status=status_code,
+                    message=error_message),
+            status_code)
+    pass
 
 
 @routing_blueprint.route('/auth', methods=['POST'])
@@ -141,3 +149,6 @@ app.register_blueprint(routing_blueprint, url_prefix=environ.get('API_ROOT', '')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=False)
+
+# TODO: make marshmallow schema validation work in nested elements (only works in top-level currently)
+# TODO: cell_identity and cell_signal_strength as DynamicEmbeddedDocuments (currently unknown/dynamic attributes are not persisted to database)
