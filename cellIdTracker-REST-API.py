@@ -114,7 +114,7 @@ def handle_validation_error(error):
 @routing_blueprint.route('/auth', methods=['POST'])
 def auth():
     auth_schema.validate(request.json)
-    source = source_schema.load(request.json)
+    source = source_schema.load({key: request.json[key] for key in request.json if key != 'psk'})
 
     if request.json['psk'] != environ.get('AUTH_PSK', 'defaultpsk'):
         return (jsonify(status=403,
