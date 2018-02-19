@@ -53,6 +53,7 @@ class LocationInformation(me.EmbeddedDocument):
     longitude = me.FloatField(required=True)
     accuracy = me.FloatField(required=True)
     altitude = me.FloatField(required=True)
+    age = me.IntField(required=True)
 
 
 class Measurement(me.Document):
