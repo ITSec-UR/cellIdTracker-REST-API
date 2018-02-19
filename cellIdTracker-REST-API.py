@@ -31,6 +31,7 @@ class Source(me.Document):
     meta = {'collection': 'sources'}
     imei = me.StringField(required=True)
     imsi = me.StringField(required=True)
+    readable_name = me.StringField(required=True)
 
 
 class CellIdentity(me.DynamicEmbeddedDocument):
