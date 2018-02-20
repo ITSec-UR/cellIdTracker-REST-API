@@ -128,6 +128,10 @@ def auth():
         existing_source_record = Source.objects.get(imei=source.imei,
                                                     imsi=source.imsi)
 
+        # update readable name in case it changed
+        existing_source_record.readable_name = source.readable_name
+        existing_source_record.save()
+
         return (jsonify(status=200,
                         source_id=str(existing_source_record.id)),
                 200)
