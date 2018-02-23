@@ -1,12 +1,11 @@
 from os import environ
 from flask import Flask, request, jsonify, Blueprint
 from marshmallow_mongoengine import ModelSchema, fields
-from marshmallow import validates_schema, ValidationError
+from marshmallow import validate, validates_schema, ValidationError
 import mongoengine as me
 
 
 app = Flask(__name__)
-app.config['JSON_SORT_KEYS'] = False
 routing_blueprint = Blueprint('routing', __name__, template_folder='templates')
 
 if 'MONGODB_DATABASE' not in environ:
@@ -59,6 +58,7 @@ class LocationInformation(me.EmbeddedDocument):
 
 class Measurement(me.Document):
     meta = {'collection': 'measurements'}
+    version = me.StringField(required=True)
     source_id = me.ObjectIdField(required=True)
     timestamp = me.DateTimeField(required=True)
     location_information = me.EmbeddedDocumentField(LocationInformation)
@@ -111,7 +111,13 @@ def handle_validation_error(error):
     return (jsonify(status=status_code,
                     message=error_message),
             status_code)
-    pass
+
+
+@app.errorhandler(Exception)
+def handle_generic_error(error):
+    return (jsonify(status=500,
+                    message=str(error)),
+            500)
 
 
 @routing_blueprint.route('/auth', methods=['POST'])
@@ -152,6 +158,90 @@ def post_measurement():
             201)
 
 
+class GetMeasurementSchema(ModelSchema):
+    measurement_fields = fields.String()
+
+
+get_measurement_schema = GetMeasurementSchema()
+
+
+@routing_blueprint.route('/measurement/<measurement_id>', methods=['GET'])
+def get_measurement(measurement_id):
+    parameters = get_measurement_schema.load(request.args)
+
+    try:
+        measurement = Measurement.objects(id=measurement_id)
+        if 'measurement_fields' in parameters:
+            measurement = measurement.only(*parameters['measurement_fields'].split(','))
+
+        return (jsonify(status=200,
+                        result=measurement_schema.dump(measurement.get())),
+                200)
+
+    except me.DoesNotExist:
+        return (jsonify(status=404,
+                        message="Measurement with object id {0} was not found.".format(measurement_id)),
+                404)
+
+
+class GetMeasurementsSchema(ModelSchema):
+    latitude_upper_bound = fields.Float(required=True)
+    latitude_lower_bound = fields.Float(required=True)
+    longitude_lower_bound = fields.Float(required=True)
+    longitude_upper_bound = fields.Float(required=True)
+    min_location_age = fields.Integer(validate=validate.Range(min=0))
+    max_location_age = fields.Integer(validate=validate.Range(min=0))
+    min_location_accuracy = fields.Float(validate=validate.Range(min=0))
+    max_location_accuracy = fields.Float(validate=validate.Range(min=0))
+    measurement_fields = fields.String()
+
+    @validates_schema
+    def validate_coordinates(self, data):
+        if data['latitude_upper_bound'] < data['latitude_lower_bound']:
+            raise ValidationError("latitude_upper_bound must be greater than latitude_lower_bound.")
+        if data['longitude_lower_bound'] > data['longitude_upper_bound']:
+            raise ValidationError("longitude_lower_bound must be smaller than longitude_upper_bound.")
+
+        if ('min_location_age' in data and 'max_location_age' in data and
+                data['min_location_age'] > data['max_location_age']):
+            raise ValidationError("min_location_age must be smaller than max_location_age.")
+
+        if ('min_location_accuracy' in data and 'max_location_accuracy' in data and
+                data['min_location_accuracy'] > data['max_location_accuracy']):
+            raise ValidationError("min_location_accuracy must be smaller than max_location_accuracy.")
+
+
+get_measurements_schema = GetMeasurementsSchema()
+
+
+@routing_blueprint.route('/measurements', methods=['GET'])
+def get_measurements():
+    parameters = get_measurements_schema.load(request.args)
+    mongoquery_parameters = {
+        'location_information__latitude__lte': parameters['latitude_upper_bound'],
+        'location_information__latitude__gte': parameters['latitude_lower_bound'],
+        'location_information__longitude__gte': parameters['longitude_lower_bound'],
+        'location_information__longitude__lte': parameters['longitude_upper_bound']
+    }
+    if 'min_location_age' in parameters:
+        mongoquery_parameters['location_information__age__gte'] = parameters['min_location_age']
+    if 'max_location_age' in parameters:
+        mongoquery_parameters['location_information__age__lte'] = parameters['max_location_age']
+    if 'min_location_accuracy' in parameters:
+        mongoquery_parameters['location_information__accuracy__gte'] = parameters['min_location_accuracy']
+    if 'max_location_accuracy' in parameters:
+        mongoquery_parameters['location_information__accuracy__lte'] = parameters['max_location_accuracy']
+
+    measurements = Measurement.objects(**mongoquery_parameters)
+    if 'measurement_fields' in parameters:
+        measurements = measurements.only(*parameters['measurement_fields'].split(','))
+
+    return (jsonify(status=200,
+                    len=len(measurements),
+                    results=measurement_schema.dump(measurements.all(), many=True)),
+            200)
+
+
 app.register_blueprint(routing_blueprint, url_prefix=environ.get('API_ROOT', ''))
 
 if __name__ == '__main__':
@@ -159,3 +249,4 @@ if __name__ == '__main__':
 
 # TODO: make marshmallow schema validation work in nested elements (only works in top-level currently)
 # TODO: cell_identity and cell_signal_strength as DynamicEmbeddedDocuments (currently unknown/dynamic attributes are not persisted to database)
+# TODO: make geographic cutouts handle map edges (switch from negative to positive latitude) correctly

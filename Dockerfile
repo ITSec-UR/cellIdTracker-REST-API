@@ -5,6 +5,6 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY cellIdTracker-REST-API.py ./
+COPY cellidtracker_rest_api.py ./
 
-CMD [ "gunicorn", "-b", "0.0.0.0:5000", "--preload", "cellIdTracker-REST-API:app" ]
+CMD [ "gunicorn", "-b", "0.0.0.0:5000", "--preload", "cellidtracker_rest_api:app" ]
