@@ -1,5 +1,5 @@
 mongoengine
-marshmallow
+marshmallow>=3.0.0b7
 Flask
 marshmallow-mongoengine
 gunicorn
